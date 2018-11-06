@@ -19,7 +19,7 @@ namespace lab02
                 { new List<double>() { 1, 1 }, 0 }
             };
 
-            for(int i = 0; i < 1000000; i++)
+            for(int i = 0; i < 400000; i++)
             {
                 var example = training_data.Keys.OrderBy(t => r.Next()).FirstOrDefault();
                 nn.Train(example, new List<double>() { training_data[example] });
@@ -31,7 +31,6 @@ namespace lab02
             Console.WriteLine(nn.Predict(new List<double>() { 0.0, 0.0 }).FirstOrDefault());
             Console.WriteLine(nn.Predict(new List<double>() { 1.0, 1.0 }).FirstOrDefault());
 
-            Console.Read();
         }
 
     }
