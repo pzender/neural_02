@@ -1,113 +1,54 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
-using MathNet.Numerics;
-using MathNet.Numerics.LinearAlgebra;
-using MathNet.Numerics.LinearAlgebra.Double;
-using MathNet.Numerics.Distributions;
 using System.Linq;
 
 namespace lab02
 {
     class NeuralNetwork
     {
-        private Matrix<double> VectorFromList(List<double> arg)
+        private List<NeuralNetworkLayer> layers;
+        private double learning_rate;
+        Random r = new Random();
+        public List<double> Predict(List<double> inputs)
         {
-            return DenseMatrix.OfColumnArrays(arg.ToArray());
+
+            foreach(NeuralNetworkLayer l in layers)
+            {
+                inputs = l.FeedForward(inputs);
+            }
+            return inputs;
         }
 
-        private List<double> ListFromVector(Matrix<double> arg)
+        public void TrainExample(List<double> inputs, List<double> expected)
         {
-            if (arg.ColumnCount > 1) throw new Exception("vector has too many columns : " + arg.ColumnCount);
-            else
+            List<double> errors = Predict(inputs).Zip(expected, (predicted, actual) => actual - predicted).ToList();
+            for (int l = 0; l < layers.Count; l++)
             {
-                return arg.Column(0).ToList();
+                errors = layers[layers.Count - l - 1].PropagateBackward(errors, learning_rate);
             }
         }
 
-        public NeuralNetwork(List<int> nodesByLayer)
+        public void BatchTrain(Dictionary<List<double>, List<double>> trainingData, int batchSize)
         {
-            weights = new List<Matrix<double>>(nodesByLayer.Count);
-            biases = new List<Matrix<double>>(nodesByLayer.Count);
-
-            for(int i = 0; i < nodesByLayer.Count-1; i++)
+            for (int i = 0; i < 5000; i++)
             {
-                weights.Add(DenseMatrix.CreateRandom(nodesByLayer[i + 1], nodesByLayer[i], new ContinuousUniform(-0.001, 0.001)));
-                biases.Add(DenseMatrix.CreateRandom(nodesByLayer[i + 1],1, new ContinuousUniform(-0.001, 0.001)));
-            }
-        }
-        public double LearningRate { get; set; } = 0.001;
-        private List<Matrix<double>> weights;
-        private List<Matrix<double>> biases;
-        
+                foreach(var e in trainingData.OrderBy(e => r.Next()))
+                {
+                    TrainExample(e.Key, e.Value);
+                }
 
-        public List<double> Predict(List<double> input)
+            }
+            
+        }
+
+        public NeuralNetwork(List<int> layers, double weights_range = 0.1, double learning_rate = 0.1)
         {
-            Matrix<double> working = VectorFromList(input);
-            for(int i = 0; i < weights.Count; i++)
+            this.layers = new List<NeuralNetworkLayer>();
+            for (int i = 0; i < layers.Count-1; i++)
             {
-                working = weights[i] * working;
-                working = working + biases[i];
-                working.Map(w => Sigmoid(w));
+                this.layers.Add(new NeuralNetworkLayer(layers[i], layers[i + 1]));
             }
-
-            return ListFromVector(working);
-            //throw new NotImplementedException();
+            this.learning_rate = learning_rate;
         }
-
-        public void Train(List<double> input, List<double> expectedOutput)
-        {
-            List<List<double>> outputsByLayer = new List<List<double>>() { input };
-
-            for(int i = 0; i < weights.Count(); i++)
-            {
-                Matrix<double> working = VectorFromList(input);
-                working = weights[i] * working;
-                working = working + biases[i];
-                working.Map(w => Sigmoid(w));
-
-                outputsByLayer.Add(ListFromVector(working));
-            }
-
-            List<double> errors = Error(outputsByLayer.Last(), expectedOutput);
-
-
-            for (int i=0; i < weights.Count; i++)
-            {
-                int layer = weights.Count - i;
-                Matrix<double> delta_weights = LearningRate *
-                     VectorFromList(errors)
-                    .PointwiseMultiply(VectorFromList(outputsByLayer[layer]))
-                    .PointwiseMultiply(1 - VectorFromList(outputsByLayer[layer]))
-                    .Multiply(VectorFromList(outputsByLayer[layer-1]).Transpose());
-
-                this.weights[layer - 1] = this.weights[layer - 1];// + delta_weights;
-
-                Matrix<double> delta_biases = LearningRate * 
-                     VectorFromList(errors)
-                    .PointwiseMultiply(VectorFromList(outputsByLayer[layer]))
-                    .PointwiseMultiply(1 - VectorFromList(outputsByLayer[layer]));
-
-                this.biases[layer - 1] = this.biases[layer - 1];// + delta_biases;
-
-                errors = ListFromVector(weights[layer-1].Transpose() * VectorFromList(errors));
-            }
-        }
-
-        private List<double>Error (List<double> actual, List<double> expected)
-        {
-            return expected.Zip(actual, (exp, act) => exp - act).ToList();
-        }
-
-        private double Sigmoid(double x)
-        {
-
-            return 1 / (1 + Math.Exp(-x));
-        }
-        //private double DSigmoid(double x)
-        //{
-        //    return Sigmoid(x) * (1 - Sigmoid(x));
-        //}
-
     }
 }

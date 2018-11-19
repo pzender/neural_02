@@ -9,28 +9,25 @@ namespace lab02
         
         static void Main(string[] args)
         {
-            NeuralNetwork nn = new NeuralNetwork(new List<int>(){2,2,1});
-            Random r = new Random();
-            Dictionary<List<double>, double> training_data = new Dictionary<List<double>, double>
+            NeuralNetwork nn = new NeuralNetwork(new List<int>(){2,2,1}, 0.4, 0.2);
+            for (int k = 0; k < 50; k++)
             {
-                { new List<double>() { 0, 0 }, 0 },
-                { new List<double>() { 0, 1 }, 1 },
-                { new List<double>() { 1, 0 }, 1 },
-                { new List<double>() { 1, 1 }, 0 }
-            };
+                Dictionary<List<double>, List<double>> trainingData = new Dictionary<List<double>, List<double>>()
+                {
+                    { new List<double>(){ 0,0} , new List<double>(){ 0}},
+                    { new List<double>(){ 0,1} , new List<double>(){ 1}},
+                    { new List<double>(){ 1,0} , new List<double>(){ 1}},
+                    { new List<double>(){ 1,1} , new List<double>(){ 0}},
+                };
 
-            for(int i = 0; i < 400000; i++)
-            {
-                var example = training_data.Keys.OrderBy(t => r.Next()).FirstOrDefault();
-                nn.Train(example, new List<double>() { training_data[example] });
+                nn.BatchTrain(trainingData, 1);
+
+                Console.WriteLine($"0, 0 => {nn.Predict(new List<double>() { 0, 0 }).First()}");
+                Console.WriteLine($"0, 1 => {nn.Predict(new List<double>() { 0, 1 }).First()}");
+                Console.WriteLine($"1, 0 => {nn.Predict(new List<double>() { 1, 0 }).First()}");
+                Console.WriteLine($"1, 1 => {nn.Predict(new List<double>() { 1, 1 }).First()}");
+                Console.WriteLine("----------------------------------------------------");
             }
-
-
-            Console.WriteLine(nn.Predict(new List<double>() { 1.0, 0.0 }).FirstOrDefault());
-            Console.WriteLine(nn.Predict(new List<double>() { 0.0, 1.0 }).FirstOrDefault());
-            Console.WriteLine(nn.Predict(new List<double>() { 0.0, 0.0 }).FirstOrDefault());
-            Console.WriteLine(nn.Predict(new List<double>() { 1.0, 1.0 }).FirstOrDefault());
-
         }
 
     }
