@@ -14,7 +14,7 @@ namespace lab02
         private Matrix<double> I;
         private Matrix<double> O;
 
-        private int inputs_cnt, outputs_cnt;
+        public int inputs_cnt, outputs_cnt;
 
         public List<double> FeedForward(List<double> inputs)
         {

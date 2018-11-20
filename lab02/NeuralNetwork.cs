@@ -9,7 +9,7 @@ namespace lab02
         private List<NeuralNetworkLayer> layers;
         private double learning_rate;
         Random r = new Random();
-        public List<double> Predict(List<double> inputs)
+        private List<double> PredictOneOf(List<double> inputs)
         {
 
             foreach(NeuralNetworkLayer l in layers)
@@ -19,23 +19,40 @@ namespace lab02
             return inputs;
         }
 
-        public void TrainExample(List<double> inputs, List<double> expected)
+        private void TrainExample(List<double> inputs, List<double> expected)
         {
-            List<double> errors = Predict(inputs).Zip(expected, (predicted, actual) => actual - predicted).ToList();
+            List<double> errors = PredictOneOf(inputs).Zip(expected, (predicted, actual) => actual - predicted).ToList();
             for (int l = 0; l < layers.Count; l++)
             {
                 errors = layers[layers.Count - l - 1].PropagateBackward(errors, learning_rate);
             }
         }
 
-        public void BatchTrain(Dictionary<List<double>, List<double>> trainingData, int batchSize)
+        private List<double> ToOneOf(int label)
         {
-            for (int i = 0; i < 5000; i++)
+            List<double> result = new List<double>();
+            for (int i = 0; i < layers.Last().outputs_cnt; i++)
             {
-                foreach(var e in trainingData.OrderBy(e => r.Next()))
+                result.Add(0);
+            }
+            result[label] = 1;
+
+            return result;
+        }
+
+        public void BatchTrain(Dictionary<List<double>, int> trainingData, int batchSize)
+        {
+            Dictionary<List<double>, int> validationData = trainingData.Skip(50000).ToDictionary(arg => arg.Key, arg => arg.Value);
+            double accuracy = 0;
+            for (int i = 0; i < 300000 && accuracy < 0.92; i++)
+            {
+                if (i % 500 == 0)
                 {
-                    TrainExample(e.Key, e.Value);
+                    accuracy = BatchTest(validationData);
+                    Console.WriteLine($"{i} \titerations: accuracy: {accuracy * 100}%");
                 }
+                var current = trainingData.ElementAt(r.Next(trainingData.Count));
+                TrainExample(current.Key, ToOneOf(current.Value));
 
             }
             
@@ -49,6 +66,29 @@ namespace lab02
                 this.layers.Add(new NeuralNetworkLayer(layers[i], layers[i + 1]));
             }
             this.learning_rate = learning_rate;
+        }
+
+        public int PredictLabel(List<double> inputs)
+        {
+            var OneOf = PredictOneOf(inputs);
+            return OneOf.IndexOf(OneOf.Max());
+        }
+
+
+        private bool TestLabel(List<double> inputs, int expected)
+        {
+            return PredictLabel(inputs) == expected;
+        }
+
+        public double BatchTest(Dictionary<List<double>, int> testData)
+        {
+            double correct = 0;
+            foreach(var test_case in testData)
+            {
+                if (PredictLabel(test_case.Key) == test_case.Value)
+                    correct++;
+            }
+            return correct / testData.Count();
         }
     }
 }
