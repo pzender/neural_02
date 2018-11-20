@@ -11,6 +11,7 @@ namespace lab02
     class NeuralNetworkLayer
     {
         private Matrix<double> W;
+        private Matrix<double> cumulative_dW;
         private Matrix<double> I;
         private Matrix<double> O;
 
@@ -32,7 +33,7 @@ namespace lab02
         {
             Matrix<double> E = VectorFromList(errors);
             Matrix<double> dW = learningRate * E.PointwiseMultiply(O).PointwiseMultiply(1-O) * I.Transpose();
-            W = W + dW;
+            cumulative_dW = cumulative_dW + dW;
 
             Matrix<double> E_prev = W.Transpose() * E;
             I = O = null;
@@ -62,11 +63,17 @@ namespace lab02
             }
         }
 
+        public void UpdateWeights()
+        {
+            W = W + cumulative_dW;
+            cumulative_dW = DenseMatrix.Create(outputs_cnt, inputs_cnt + 1, 0);
+        }
+
         public NeuralNetworkLayer(int inputs, int outputs, double weights_range = 0.1)
         {
             inputs_cnt = inputs;
             outputs_cnt = outputs;
-            //W = DenseMatrix.Create(outputs, inputs+1, 0);
+            cumulative_dW = DenseMatrix.Create(outputs, inputs+1, 0);
             W = DenseMatrix.CreateRandom(outputs, inputs + 1, new ContinuousUniform(-weights_range / 2, weights_range / 2));
         }
     }
