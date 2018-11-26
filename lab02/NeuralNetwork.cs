@@ -7,7 +7,13 @@ namespace lab02
     class NeuralNetwork
     {
         private List<NeuralNetworkLayer> layers;
+
         private double learning_rate;
+        private readonly double i_learning_rate;
+        private double momentum_rate;
+        private readonly double i_momentum_rate;
+        private readonly bool adaptive_learning_rate;
+
         public int ExamplesProcessed { get; private set; }
         Random r = new Random();
         private List<double> PredictOneOf(List<double> inputs)
@@ -52,27 +58,34 @@ namespace lab02
                 .Take(1000)
                 .ToDictionary(arg => arg.Key, arg => arg.Value);
             double accuracy = 0;
-            int epochs = 10 * (training_data_size / batchSize);
-            for (int i = 0; i < epochs && accuracy < 0.9; i++)
+            for (int i = 0; this.ExamplesProcessed < 100000; i++)
             {
                 if (i % (1000 / batchSize) == 0)
                 {
-                    Console.WriteLine("\ttesting batch on validation data");
+                    //Console.WriteLine("\ttesting batch on validation data");
                     accuracy = BatchTest(validationData);
-                    Console.WriteLine($"\tBatch {i}\t accuracy: {accuracy * 100}%");
+                    Console.WriteLine($"{ExamplesProcessed}\t{accuracy * 100}%");
+                    if (adaptive_learning_rate)
+                    {
+                        learning_rate = i_learning_rate * 0.1 / accuracy;
+                        momentum_rate = i_momentum_rate * 0.1 / accuracy;
+                        
+                    }
                 }
                 Dictionary<List<double>, int> trainingBatch = trainingData
                     .Skip((batchSize * i) % training_data_size)
                     .Take(batchSize)
                     .ToDictionary(arg => arg.Key, arg => arg.Value);
                 
+
+
                 foreach(var c in trainingBatch)
                 {
                     TrainExample(c.Key, ToOneOf(c.Value));
                 }
                 foreach (NeuralNetworkLayer l in layers)
                 {
-                    l.UpdateWeights();
+                    l.UpdateWeights(learning_rate, momentum_rate);
                 }
                 
 
@@ -80,14 +93,16 @@ namespace lab02
             
         }
 
-        public NeuralNetwork(List<int> layers, double weights_range = 0.1, double learning_rate = 0.1)
+        public NeuralNetwork(List<int> layers, double weights_range = 0.1, double learning_rate = 0.1, double momentum_rate = 0, bool adaptive_learning_rate = false)
         {
             this.layers = new List<NeuralNetworkLayer>();
             for (int i = 0; i < layers.Count-1; i++)
             {
                 this.layers.Add(new NeuralNetworkLayer(layers[i], layers[i + 1]));
             }
-            this.learning_rate = learning_rate;
+            this.learning_rate = i_learning_rate = learning_rate;
+            this.momentum_rate = i_momentum_rate = momentum_rate;
+            this.adaptive_learning_rate = adaptive_learning_rate;
             ExamplesProcessed = 0;
         }
 

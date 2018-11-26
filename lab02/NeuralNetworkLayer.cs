@@ -12,6 +12,7 @@ namespace lab02
     {
         private Matrix<double> W;
         private Matrix<double> cumulative_dW;
+        private Matrix<double> last_iter_dW;
         private Matrix<double> I;
         private Matrix<double> O;
 
@@ -32,7 +33,7 @@ namespace lab02
         public List<double> PropagateBackward(List<double> errors, double learningRate)
         {
             Matrix<double> E = VectorFromList(errors);
-            Matrix<double> dW = learningRate * E.PointwiseMultiply(O).PointwiseMultiply(1-O) * I.Transpose();
+            Matrix<double> dW = E.PointwiseMultiply(O).PointwiseMultiply(1-O) * I.Transpose();
             cumulative_dW = cumulative_dW + dW;
 
             Matrix<double> E_prev = W.Transpose() * E;
@@ -63,9 +64,11 @@ namespace lab02
             }
         }
 
-        public void UpdateWeights()
+        public void UpdateWeights(double learning_rate, double momentum_rate)
         {
-            W = W + cumulative_dW;
+            W = W + learning_rate * cumulative_dW + momentum_rate * last_iter_dW;
+
+            last_iter_dW = cumulative_dW.Clone();
             cumulative_dW = DenseMatrix.Create(outputs_cnt, inputs_cnt + 1, 0);
         }
 
@@ -74,6 +77,7 @@ namespace lab02
             inputs_cnt = inputs;
             outputs_cnt = outputs;
             cumulative_dW = DenseMatrix.Create(outputs, inputs+1, 0);
+            last_iter_dW = DenseMatrix.Create(outputs, inputs+1, 0);
             W = DenseMatrix.CreateRandom(outputs, inputs + 1, new ContinuousUniform(-weights_range / 2, weights_range / 2));
         }
     }
