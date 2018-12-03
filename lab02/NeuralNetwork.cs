@@ -6,22 +6,22 @@ namespace lab02
 {
     class NeuralNetwork
     {
-        private List<NeuralNetworkLayer> layers;
-
+        public List<NeuralNetworkLayer> layers;
+        
         private double learning_rate;
         private readonly double i_learning_rate;
         private double momentum_rate;
         private readonly double i_momentum_rate;
+        private readonly double dropout_rate;
         private readonly bool adaptive_learning_rate;
 
         public int ExamplesProcessed { get; private set; }
         Random r = new Random();
-        private List<double> PredictOneOf(List<double> inputs)
+        private List<double> PredictOneOf(List<double> inputs, bool useDropout)
         {
-
-            foreach(NeuralNetworkLayer l in layers)
+            for (int l = 0; l < layers.Count; l++)
             {
-                inputs = l.FeedForward(inputs);
+                inputs = layers[l].FeedForward(inputs, useDropout);
             }
             return inputs;
         }
@@ -29,12 +29,12 @@ namespace lab02
         private void TrainExample(List<double> inputs, List<double> expected)
         {
             ExamplesProcessed++;
-            List<double> errors = PredictOneOf(inputs)
+            List<double> errors = PredictOneOf(inputs, true)
                 .Zip(expected, (predicted, actual) => actual - predicted)
                 .ToList();
             for (int l = 0; l < layers.Count; l++)
             {
-                errors = layers[layers.Count - l - 1].PropagateBackward(errors, learning_rate);
+                errors = layers[layers.Count - l - 1].PropagateBackward(errors, learning_rate, dropout_rate);
             }
         }
 
@@ -58,7 +58,7 @@ namespace lab02
                 .Take(1000)
                 .ToDictionary(arg => arg.Key, arg => arg.Value);
             double accuracy = 0;
-            for (int i = 0; this.ExamplesProcessed < 100000; i++)
+            for (int i = 0; this.ExamplesProcessed < 100000 && accuracy < 0.9; i++)
             {
                 if (i % (1000 / batchSize) == 0)
                 {
@@ -90,25 +90,26 @@ namespace lab02
                 
 
             }
-            
+            Console.WriteLine("Done!");
         }
 
-        public NeuralNetwork(List<int> layers, double weights_range = 0.1, double learning_rate = 0.1, double momentum_rate = 0, bool adaptive_learning_rate = false)
+        public NeuralNetwork(List<int> layers, double weights_range = 0.2, double learning_rate = 0.02, double momentum_rate = 0, bool adaptive_learning_rate = false, double dropout_rate = 0)
         {
             this.layers = new List<NeuralNetworkLayer>();
             for (int i = 0; i < layers.Count-1; i++)
             {
-                this.layers.Add(new NeuralNetworkLayer(layers[i], layers[i + 1]));
+                this.layers.Add(new NeuralNetworkLayer(layers[i], layers[i + 1], weights_range : weights_range, dropout_rate : dropout_rate));
             }
             this.learning_rate = i_learning_rate = learning_rate;
             this.momentum_rate = i_momentum_rate = momentum_rate;
             this.adaptive_learning_rate = adaptive_learning_rate;
+            this.dropout_rate = dropout_rate;
             ExamplesProcessed = 0;
         }
 
         public int PredictLabel(List<double> inputs)
         {
-            var OneOf = PredictOneOf(inputs);
+            var OneOf = PredictOneOf(inputs, false);
             return OneOf.IndexOf(OneOf.Max());
         }
 
@@ -123,7 +124,7 @@ namespace lab02
             double correct = 0;
             foreach(var test_case in testData)
             {
-                if (PredictLabel(test_case.Key) == test_case.Value)
+                if (TestLabel(test_case.Key, test_case.Value))
                     correct++;
             }
             return correct / testData.Count();
