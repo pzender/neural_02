@@ -20,7 +20,7 @@ namespace lab02
         private Matrix<double> O;
         private Matrix<double> D;
 
-        private MathUtilities.ActivationFunction activationFunction;
+        public MathUtilities.ActivationFunction activationFunction;
         public int inputs_cnt, outputs_cnt;
 
         public List<double> FeedForward(List<double> inputs, bool use_dropout)

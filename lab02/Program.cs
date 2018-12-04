@@ -8,7 +8,7 @@ namespace lab02
 {
     class Program
     {
-        static readonly int[] hidden_neuron_counts = { 10, 20, 50, 100, 200, 500 };
+        static readonly int[] hidden_neuron_counts = { 10, 20, 50, 100, 200 };
         static readonly int[] batch_sizes = { 1, 10, 20, 50, 100, 200, 500 };
         static readonly double[] initial_weights = { 0, 0.001, 0.002, 0.005, 0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1 };
         static readonly double[] learning_rates = { 0.001, 0.002, 0.005, 0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1 };
@@ -24,10 +24,12 @@ namespace lab02
 
             using (StreamWriter log = new StreamWriter("log.txt"))
             {
-                log.WriteLine("\thidden_neuron_count\tbatch_size\tinitial_weights\tlearning_rate\tmomentum_rate\tadaptive\tdropout_rate\taccuracy\ttime\texamples");
+                foreach (int n in hidden_neuron_counts)
+                {
+                    log.WriteLine("\thidden_neuron_count\tbatch_size\tinitial_weights\tlearning_rate\tmomentum_rate\tadaptive\tdropout_rate\taccuracy\ttime\texamples");
 
-                Console.WriteLine(RunComboTest(trainingData, testData));
-
+                    Console.WriteLine(RunComboTest(trainingData, testData, hidden_neuron_count:n));
+                }
             }
             
         }
@@ -70,6 +72,7 @@ namespace lab02
             NeuralNetwork nn = new NeuralNetwork(new List<int>() { 28 * 28, hidden_neuron_count, 10 }, initial_weights, learning_rate, momentum_rate, adaptive, dropout_rate);
             nn.layers = ae.GetEncoder();
             nn.layers.Add(new NeuralNetworkLayer(hidden_neuron_count, 10, initial_weights));
+            nn.layers.Last().activationFunction = MathUtilities.SOFTMAX;
             nn.BatchTrain(trainingData, batch_size);
 
             return $"\t{hidden_neuron_count}\t{batch_size}\t{initial_weights}\t{learning_rate}\t{momentum_rate}\t{adaptive}\t{dropout_rate}\t{nn.BatchTest(testData)}\t{watch.ElapsedMilliseconds / 1000.0}\t{ae.ExamplesProcessed + nn.ExamplesProcessed}";

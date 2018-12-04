@@ -58,7 +58,7 @@ namespace lab02
                 .Take(1000)
                 .ToDictionary(arg => arg.Key, arg => arg.Value);
             double accuracy = 0;
-            for (int i = 0; this.ExamplesProcessed < 100000 && accuracy < 0.9; i++)
+            for (int i = 0; this.ExamplesProcessed < 100000; i++)
             {
                 if (i % (1000 / batchSize) == 0)
                 {

@@ -10,7 +10,7 @@ namespace lab02
     {
         public static double Softmax(double value, List<double> vector)
         {
-            return 1 / (vector.Select(v => Math.Exp(value - v)).Sum());
+            return 1 / (vector.Select(v => Math.Exp(v - value)).Sum());
         }
 
         public static double Sigmoid(double value, List<double> vector = null)
@@ -30,7 +30,7 @@ namespace lab02
 
         public static Matrix<double> DReLU(Matrix<double> arg)
         {
-            return arg.Map(a => a >= 0 ? 1.0 : 0.0);
+            return arg.Map(a => a > 0 ? 1.0 : 0.0);
         }
 
 
